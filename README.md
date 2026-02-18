@@ -4,6 +4,12 @@
 
 AI Worker is a robust, secure, and scalable AI agent runtime designed for high-stakes environments. It features a strict state machine architecture, persistent memory with TF-IDF retrieval, comprehensive auditing, and deep security controls including secret redaction and path traversal protection.
 
+## About
+
+AI Worker is the definitive runtime for deploying autonomous AI agents in production.
+Unlike experimental frameworks, AI Worker guarantees deterministic execution, strict security boundaries, and complete auditability.
+It bridges the gap between LLM capabilities and enterprise requirements, enabling safe and reliable automation of complex workflows.
+
 ## Features
 
 - **Strict State Machine**: Deterministic execution flow (Plan -> Model -> Tool -> Validate).
@@ -90,6 +96,22 @@ ai-worker audit --session <session_id>
     pytest
     ```
 
+## Enterprise
+
+AI Worker is a commercial product designed for enterprise environments.
+Features include:
+
+- **SLA Support**: 24/7 dedicated support.
+- **Custom Integrations**: Tailored connectors for your internal tools.
+- **On-Premise Deployment**: Full control over your data and infrastructure.
+- **Audit Compliance**: Enhanced logging and security features.
+
+Contact **<sales@ai-worker.com>** for pricing and licensing details.
+
 ## License
 
-[MIT](LICENSE)
+**Proprietary / Commercial**
+
+Copyright (c) 2024 AI Worker. All Rights Reserved.
+Unauthorized copying of this file, via any medium is strictly prohibited.
+See [LICENSE](LICENSE) for details.
