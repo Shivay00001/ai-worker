@@ -106,12 +106,12 @@ Features include:
 - **On-Premise Deployment**: Full control over your data and infrastructure.
 - **Audit Compliance**: Enhanced logging and security features.
 
-Contact **<sales@ai-worker.com>** for pricing and licensing details.
+Contact **<shivaysinghrajput@proton.me>** for pricing and licensing details.
 
 ## License
 
 **Proprietary / Commercial**
 
-Copyright (c) 2024 AI Worker. All Rights Reserved.
+Copyright (c) 2026 AI Worker. All Rights Reserved.
 Unauthorized copying of this file, via any medium is strictly prohibited.
 See [LICENSE](LICENSE) for details.
