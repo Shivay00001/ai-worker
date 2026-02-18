@@ -1,11 +1,11 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "asi_v8"
+name = "ai-worker"
 version = "8.0.0"
-description = "ASI v8 — Production-grade single-agent AI execution runtime"
+description = "AI Worker — Production-grade single-agent AI execution runtime"
 requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.10",
@@ -21,7 +21,7 @@ dev = [
 ]
 
 [project.scripts]
-asi = "asi.cli:cli"
+ai-worker = "ai_worker.cli:cli"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

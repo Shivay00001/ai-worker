@@ -1,5 +1,5 @@
 """
-ASI v8 Configuration
+AI Worker Configuration
 All configuration loaded from environment variables.
 """
 
@@ -19,9 +19,9 @@ class Config:
     preferred_provider: str = "groq"
 
     # Paths
-    db_path: str = "./data/asi.db"
+    db_path: str = "./data/ai_worker.db"
     audit_dir: str = "./data/audit/"
-    workspace_dir: str = "/tmp/asi_workspace"
+    workspace_dir: str = "/tmp/ai_worker_workspace"
 
     # Limits
     max_query_len: int = 8000
@@ -51,7 +51,7 @@ class Config:
 
         if errors:
             raise ValueError(
-                "ASI v8 startup failed — missing required configuration:\n"
+                "AI Worker startup failed — missing required configuration:\n"
                 + "\n".join(f"  - {e}" for e in errors)
             )
 
@@ -60,11 +60,11 @@ class Config:
             openai_api_key=openai_key,
             anthropic_api_key=anthropic_key,
             preferred_provider=os.getenv("PREFERRED_PROVIDER", "groq"),
-            db_path=os.getenv("ASI_DB_PATH", "./data/asi.db"),
-            audit_dir=os.getenv("ASI_AUDIT_DIR", "./data/audit/"),
-            workspace_dir=os.getenv("ASI_WORKSPACE_DIR", "/tmp/asi_workspace"),
-            max_query_len=int(os.getenv("ASI_MAX_QUERY_LEN", "8000")),
-            model_timeout=int(os.getenv("ASI_MODEL_TIMEOUT", "30")),
+            db_path=os.getenv("AI_WORKER_DB_PATH", "./data/ai_worker.db"),
+            audit_dir=os.getenv("AI_WORKER_AUDIT_DIR", "./data/audit/"),
+            workspace_dir=os.getenv("AI_WORKER_WORKSPACE_DIR", "/tmp/ai_worker_workspace"),
+            max_query_len=int(os.getenv("AI_WORKER_MAX_QUERY_LEN", "8000")),
+            model_timeout=int(os.getenv("AI_WORKER_MODEL_TIMEOUT", "30")),
             groq_model=os.getenv("GROQ_MODEL", "mixtral-8x7b-32768"),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             anthropic_model=os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),

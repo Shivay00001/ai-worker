@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from asi.errors import ASISecurityError, ASIToolError, ASIValidationError
-from asi.security import InputValidator, safe_path
+from ai_worker.errors import ASISecurityError, ASIToolError, ASIValidationError
+from ai_worker.security import InputValidator, safe_path
 
 
 class TestPathTraversal:
@@ -65,7 +65,7 @@ class TestPathTraversal:
 
     @pytest.mark.asyncio
     async def test_file_tool_traversal_blocked(self):
-        from asi.tools.file_tool import FileReadTool, FileReadInput
+        from ai_worker.tools.file_tool import FileReadTool, FileReadInput
         tool = FileReadTool(allowed_dirs=self.allowed)
         inp = FileReadInput(path="/etc/passwd")
         with pytest.raises(ASISecurityError):
@@ -73,7 +73,7 @@ class TestPathTraversal:
 
     @pytest.mark.asyncio
     async def test_file_tool_dotdot_blocked(self):
-        from asi.tools.file_tool import FileReadTool, FileReadInput
+        from ai_worker.tools.file_tool import FileReadTool, FileReadInput
         tool = FileReadTool(allowed_dirs=self.allowed)
         attack_path = os.path.join(self.tmpdir, "..", "etc", "passwd")
         inp = FileReadInput(path=attack_path)
@@ -137,7 +137,7 @@ class TestRCEPrevention:
         except ImportError:
             pytest.skip("asteval not installed")
 
-        from asi.tools.calc_tool import CalcTool, CalcInput
+        from ai_worker.tools.calc_tool import CalcTool, CalcInput
         tool = CalcTool()
 
         # Normal math should work
@@ -153,8 +153,8 @@ class TestRCEPrevention:
         except ImportError:
             pytest.skip("asteval not installed")
 
-        from asi.tools.calc_tool import CalcTool, CalcInput
-        from asi.errors import ASIToolError
+        from ai_worker.tools.calc_tool import CalcTool, CalcInput
+        from ai_worker.errors import ASIToolError
         tool = CalcTool()
 
         inp = CalcInput(expression="__import__('os').system('id')")
@@ -164,29 +164,29 @@ class TestRCEPrevention:
 
     def test_no_subprocess_shell_in_codebase(self):
         """shell=True must not appear anywhere in production code."""
-        asi_dir = Path(__file__).parent.parent / "src" / "asi"
-        cli_file = Path(__file__).parent.parent / "src" / "asi" / "cli.py"
+        asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
+        cli_file = Path(__file__).parent.parent / "src" / "ai_worker" / "cli.py"
         files = list(asi_dir.rglob("*.py")) + [cli_file]
         for f in files:
             content = f.read_text()
             assert "shell=True" not in content, f"shell=True found in {f}"
 
     def test_no_eval_in_codebase(self):
-        asi_dir = Path(__file__).parent.parent / "src" / "asi"
+        asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
         for f in asi_dir.rglob("*.py"):
             content = f.read_text()
             lines = [l for l in content.splitlines() if "eval(" in l and not l.strip().startswith("#")]
             assert not lines, f"eval() found in {f}: {lines}"
 
     def test_no_exec_in_codebase(self):
-        asi_dir = Path(__file__).parent.parent / "src" / "asi"
+        asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
         for f in asi_dir.rglob("*.py"):
             content = f.read_text()
             lines = [l for l in content.splitlines() if "exec(" in l and not l.strip().startswith("#")]
             assert not lines, f"exec() found in {f}: {lines}"
 
     def test_no_pickle_in_codebase(self):
-        asi_dir = Path(__file__).parent.parent / "src" / "asi"
+        asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
         for f in asi_dir.rglob("*.py"):
             content = f.read_text()
             assert "import pickle" not in content, f"pickle found in {f}"
@@ -197,7 +197,7 @@ class TestWebFetchSecurity:
 
     @pytest.mark.asyncio
     async def test_localhost_blocked(self):
-        from asi.tools.web_tool import WebFetchTool, WebFetchInput
+        from ai_worker.tools.web_tool import WebFetchTool, WebFetchInput
         tool = WebFetchTool(allowed_url_prefixes=["http://"])
         inp = WebFetchInput(url="http://localhost/admin")
         with pytest.raises(ASISecurityError):
@@ -205,7 +205,7 @@ class TestWebFetchSecurity:
 
     @pytest.mark.asyncio
     async def test_127_blocked(self):
-        from asi.tools.web_tool import WebFetchTool, WebFetchInput
+        from ai_worker.tools.web_tool import WebFetchTool, WebFetchInput
         tool = WebFetchTool(allowed_url_prefixes=["http://"])
         inp = WebFetchInput(url="http://127.0.0.1/secret")
         with pytest.raises(ASISecurityError):
@@ -213,7 +213,7 @@ class TestWebFetchSecurity:
 
     @pytest.mark.asyncio
     async def test_url_not_in_whitelist(self):
-        from asi.tools.web_tool import WebFetchTool, WebFetchInput
+        from ai_worker.tools.web_tool import WebFetchTool, WebFetchInput
         tool = WebFetchTool(allowed_url_prefixes=["https://example.com"])
         inp = WebFetchInput(url="https://evil.com/exfil")
         with pytest.raises(ASISecurityError):
@@ -221,7 +221,7 @@ class TestWebFetchSecurity:
 
     @pytest.mark.asyncio
     async def test_non_http_scheme_blocked(self):
-        from asi.tools.web_tool import WebFetchTool, WebFetchInput
+        from ai_worker.tools.web_tool import WebFetchTool, WebFetchInput
         tool = WebFetchTool(allowed_url_prefixes=["file://"])
         inp = WebFetchInput(url="file:///etc/passwd")
         with pytest.raises(ASISecurityError):

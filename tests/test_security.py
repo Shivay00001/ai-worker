@@ -29,8 +29,8 @@ def temporary_test_env():
             pass
 
 
-from asi.errors import ASISecurityError, ASIValidationError
-from asi.security import InputValidator, SecretRedactionFilter, safe_path
+from ai_worker.errors import ASISecurityError, ASIValidationError
+from ai_worker.security import InputValidator, SecretRedactionFilter, safe_path
 
 
 # ---------------------------------------------------------------------------
@@ -169,9 +169,9 @@ class TestSecretRedactionFilter:
 
 def test_no_pickle_in_source():
     """Ensure no pickle imports in production source (not tests)."""
-    asi_dir = Path(__file__).parent.parent / "src" / "asi"
+    asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
     py_files = list(asi_dir.rglob("*.py"))
-    assert py_files, "No Python files found in asi/ directory"
+    assert py_files, "No Python files found in ai_worker/ directory"
     for f in py_files:
         content = f.read_text(encoding="utf-8")
         assert "import pickle" not in content, f"pickle found in {f}"
@@ -184,7 +184,7 @@ def test_no_pickle_in_source():
 # ---------------------------------------------------------------------------
 
 def test_no_eval_in_source():
-    asi_dir = Path(__file__).parent.parent / "src" / "asi"
+    asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
     for f in asi_dir.rglob("*.py"):
         content = f.read_text(encoding="utf-8")
         # Allow "eval" in comments and docstrings but not as function calls
@@ -193,7 +193,7 @@ def test_no_eval_in_source():
 
 
 def test_no_exec_in_source():
-    asi_dir = Path(__file__).parent.parent / "src" / "asi"
+    asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
     for f in asi_dir.rglob("*.py"):
         content = f.read_text(encoding="utf-8")
         lines = [l for l in content.splitlines() if "exec(" in l and not l.strip().startswith("#")]
@@ -201,8 +201,8 @@ def test_no_exec_in_source():
 
 
 def test_no_shell_true_in_source():
-    asi_dir = Path(__file__).parent.parent / "src" / "asi"
-    cli_path = Path(__file__).parent.parent / "src" / "asi" / "cli.py"
+    asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
+    cli_path = Path(__file__).parent.parent / "src" / "ai_worker" / "cli.py"
     files = list(asi_dir.rglob("*.py")) + [cli_path]
     for f in files:
         content = f.read_text(encoding="utf-8")
@@ -210,7 +210,7 @@ def test_no_shell_true_in_source():
 
 
 def test_no_os_system_in_source():
-    asi_dir = Path(__file__).parent.parent / "src" / "asi"
+    asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
     for f in asi_dir.rglob("*.py"):
         content = f.read_text(encoding="utf-8")
         assert "os.system(" not in content, f"os.system found in {f}"
@@ -221,7 +221,7 @@ def test_no_os_system_in_source():
 # ---------------------------------------------------------------------------
 
 def test_no_md5_in_source():
-    asi_dir = Path(__file__).parent.parent / "src" / "asi"
+    asi_dir = Path(__file__).parent.parent / "src" / "ai_worker"
     for f in asi_dir.rglob("*.py"):
         content = f.read_text(encoding="utf-8")
         assert "hashlib.md5" not in content, f"hashlib.md5 found in {f}"
@@ -232,7 +232,7 @@ def test_no_md5_in_source():
 # ---------------------------------------------------------------------------
 
 def test_router_has_wait_for():
-    router_path = Path(__file__).parent.parent / "src" / "asi" / "router.py"
+    router_path = Path(__file__).parent.parent / "src" / "ai_worker" / "router.py"
     content = router_path.read_text()
     assert "asyncio.wait_for" in content, "router.py must use asyncio.wait_for"
     assert "ClientTimeout" in content, "router.py must use aiohttp.ClientTimeout"
@@ -243,7 +243,7 @@ def test_router_has_wait_for():
 # ---------------------------------------------------------------------------
 
 def test_circuit_breaker_opens_after_threshold():
-    from asi.router import CircuitBreaker
+    from ai_worker.router import CircuitBreaker
 
     cb = CircuitBreaker("test_provider")
     assert cb.state.value == "CLOSED"
@@ -258,7 +258,7 @@ def test_circuit_breaker_opens_after_threshold():
 
 
 def test_circuit_breaker_success_resets():
-    from asi.router import CircuitBreaker
+    from ai_worker.router import CircuitBreaker
 
     cb = CircuitBreaker("test_provider")
     cb.record_failure()
@@ -279,7 +279,7 @@ def test_circuit_breaker_success_resets():
 # ---------------------------------------------------------------------------
 
 def test_model_names_from_env():
-    from asi.config import Config
+    from ai_worker.config import Config
 
     with patch.dict(os.environ, {
         "GROQ_API_KEY": "test_key",
@@ -296,7 +296,7 @@ def test_model_names_from_env():
 # ---------------------------------------------------------------------------
 
 def test_no_numpy_in_memory():
-    memory_path = Path(__file__).parent.parent / "src" / "asi" / "memory.py"
+    memory_path = Path(__file__).parent.parent / "src" / "ai_worker" / "memory.py"
     content = memory_path.read_text()
     assert "import numpy" not in content, "memory.py must not use numpy"
     assert "np.array" not in content, "memory.py must not use numpy arrays"
@@ -307,7 +307,7 @@ def test_no_numpy_in_memory():
 # ---------------------------------------------------------------------------
 
 def test_no_threading_in_kernel():
-    kernel_path = Path(__file__).parent.parent / "src" / "asi" / "kernel.py"
+    kernel_path = Path(__file__).parent.parent / "src" / "ai_worker" / "kernel.py"
     content = kernel_path.read_text()
     assert "import threading" not in content, "kernel.py must not use threading"
     assert "Thread(" not in content, "kernel.py must not create Thread objects"
@@ -319,7 +319,7 @@ def test_no_threading_in_kernel():
 
 def test_memory_session_fields():
     with temporary_test_env() as tmpdir:
-        from asi.memory import MemoryLayer
+        from ai_worker.memory import MemoryLayer
         db = os.path.join(tmpdir, "test.db")
         mem = MemoryLayer(db_path=db)
         mem.create_session("sess-1", "exec-1", "trace-1", "queryhash")
@@ -335,7 +335,7 @@ def test_memory_session_fields():
 # ---------------------------------------------------------------------------
 
 def test_sqlite_uses_context_manager():
-    memory_path = Path(__file__).parent.parent / "src" / "asi" / "memory.py"
+    memory_path = Path(__file__).parent.parent / "src" / "ai_worker" / "memory.py"
     content = memory_path.read_text()
     assert "BEGIN IMMEDIATE" in content, "memory.py must use explicit transactions"
     assert "with sqlite3.connect" in content, "memory.py must use context managers"
@@ -347,8 +347,8 @@ def test_sqlite_uses_context_manager():
 
 def test_memory_rollback_on_failure():
     with temporary_test_env() as tmpdir:
-        from asi.memory import MemoryLayer
-        from asi.errors import ASIMemoryError
+        from ai_worker.memory import MemoryLayer
+        from ai_worker.errors import ASIMemoryError
         db = os.path.join(tmpdir, "test.db")
         mem = MemoryLayer(db_path=db)
 
@@ -369,7 +369,7 @@ def test_memory_rollback_on_failure():
 # ---------------------------------------------------------------------------
 
 def test_no_parallel_reasoning():
-    kernel_path = Path(__file__).parent.parent / "src" / "asi" / "kernel.py"
+    kernel_path = Path(__file__).parent.parent / "src" / "ai_worker" / "kernel.py"
     content = kernel_path.read_text()
     assert "asyncio.gather" not in content or "reasoning" not in content, \
         "kernel.py should not have parallel reasoning system"

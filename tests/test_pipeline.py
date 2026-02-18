@@ -11,16 +11,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from asi.config import Config
-from asi.audit import AuditLogger
-from asi.errors import ASIAllProvidersFailedError, ASISecurityError, ASIValidationError
-from asi.kernel import ExecutionKernel, KernelState
-from asi.memory import MemoryLayer
-from asi.router import ModelResponse, ModelRouter
-from asi.tools.calc_tool import CalcTool
-from asi.tools.file_tool import FileReadTool
-from asi.tools.registry import Permission, ToolRegistry
-from asi.tools.web_tool import WebFetchTool
+from ai_worker.config import Config
+from ai_worker.audit import AuditLogger
+from ai_worker.errors import ASIAllProvidersFailedError, ASISecurityError, ASIValidationError
+from ai_worker.kernel import ExecutionKernel, KernelState
+from ai_worker.memory import MemoryLayer
+from ai_worker.router import ModelResponse, ModelRouter
+from ai_worker.tools.calc_tool import CalcTool
+from ai_worker.tools.file_tool import FileReadTool
+from ai_worker.tools.registry import Permission, ToolRegistry
+from ai_worker.tools.web_tool import WebFetchTool
 
 import contextlib
 import shutil
@@ -259,7 +259,7 @@ class TestToolIntegration:
             test_file = Path(tmpdir) / "test.txt"
             test_file.write_text("Hello from test file!")
 
-            from asi.tools.file_tool import FileReadTool, FileReadInput
+            from ai_worker.tools.file_tool import FileReadTool, FileReadInput
             tool = FileReadTool(allowed_dirs=[Path(tmpdir)])
             inp = FileReadInput(path=str(test_file))
             result = await tool._execute(inp)
@@ -274,7 +274,7 @@ class TestToolIntegration:
         except ImportError:
             pytest.skip("asteval not installed")
 
-        from asi.tools.calc_tool import CalcTool, CalcInput
+        from ai_worker.tools.calc_tool import CalcTool, CalcInput
         tool = CalcTool()
         inp = CalcInput(expression="3 * 7 + 2")
         result = await tool._execute(inp)
@@ -282,8 +282,8 @@ class TestToolIntegration:
 
     @pytest.mark.asyncio
     async def test_tool_registry_permission_denied(self):
-        from asi.tools.calc_tool import CalcTool
-        from asi.errors import ASIPermissionError
+        from ai_worker.tools.calc_tool import CalcTool
+        from ai_worker.errors import ASIPermissionError
 
         import tempfile, os
         with temporary_test_env() as tmpdir:
@@ -300,7 +300,7 @@ class TestToolIntegration:
 
     @pytest.mark.asyncio
     async def test_tool_registry_unknown_tool(self):
-        from asi.errors import ASIToolError
+        from ai_worker.errors import ASIToolError
         import tempfile, os
 
         with temporary_test_env() as tmpdir:

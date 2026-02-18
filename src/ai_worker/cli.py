@@ -1,5 +1,5 @@
 """
-ASI v8 CLI Adapter
+AI Worker CLI Adapter
 Uses Click. Zero business logic — all calls delegate to kernel/memory/audit.
 Errors → stderr + sys.exit(1). Normal output → stdout.
 """
@@ -11,16 +11,16 @@ from pathlib import Path
 
 import click
 
-from asi.audit import AuditLogger
-from asi.config import Config
-from asi.errors import ASIError
-from asi.kernel import ExecutionKernel
-from asi.memory import MemoryLayer
-from asi.router import ModelRouter
-from asi.tools.calc_tool import CalcTool
-from asi.tools.file_tool import FileReadTool
-from asi.tools.registry import Permission, ToolRegistry
-from asi.tools.web_tool import WebFetchTool
+from ai_worker.audit import AuditLogger
+from ai_worker.config import Config
+from ai_worker.errors import ASIError
+from ai_worker.kernel import ExecutionKernel
+from ai_worker.memory import MemoryLayer
+from ai_worker.router import ModelRouter
+from ai_worker.tools.calc_tool import CalcTool
+from ai_worker.tools.file_tool import FileReadTool
+from ai_worker.tools.registry import Permission, ToolRegistry
+from ai_worker.tools.web_tool import WebFetchTool
 
 
 def _build_kernel(config: Config) -> ExecutionKernel:
@@ -43,7 +43,7 @@ def _build_kernel(config: Config) -> ExecutionKernel:
     registry.register(
         WebFetchTool(
             allowed_url_prefixes=os.environ.get(
-                "ASI_ALLOWED_URLS", "https://,http://"
+                "AI_WORKER_ALLOWED_URLS", "https://,http://"
             ).split(",")
         )
     )
@@ -60,7 +60,7 @@ def _build_kernel(config: Config) -> ExecutionKernel:
 
 @click.group()
 def cli():
-    """ASI v8 — production-grade single-agent AI runtime."""
+    """AI Worker — production-grade single-agent AI runtime."""
 
 
 @cli.command("run")
