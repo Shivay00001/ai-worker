@@ -343,7 +343,8 @@ class ExecutionKernel:
 
         # Simple heuristic classification (no extra LLM call in v1)
         query_lower = ctx.validated_query.lower()
-        tool_keywords = ["read file", "fetch url", "calculate", "compute", "open file", "get url"]
+        # Broader keywords to catch natural language variations
+        tool_keywords = ["read", "file", "fetch", "url", "calculate", "compute", "calc", "http", "https"]
         requires_tools = any(kw in query_lower for kw in tool_keywords)
 
         if "?" in ctx.validated_query:
@@ -429,11 +430,20 @@ class ExecutionKernel:
 
         ctx.plan_prompt = (
             f"You are a helpful AI assistant.\n\n"
-            f"Available tools: {tool_list}\n\n"
+            f"Available tools: {tool_list}\n"
+            f"To use a tool, output ONLY the command on a separate line:\n"
+            f"- FILE_READ: <absolute_path>\n"
+            f"- WEB_FETCH: <url>\n"
+            f"- CALC: <expression>\n\n"
+            f"EXAMPLES:\n"
+            f"User: Read the file C:\\test.txt\n"
+            f"Assistant:\nFILE_READ: C:\\test.txt\n\n"
+            f"User: Calculate 5 + 5\n"
+            f"Assistant:\nCALC: 5 + 5\n\n"
             f"Relevant context from memory:\n{memory_snippets}\n\n"
             f"Intent: {ctx.intent}\n\n"
             f"{self._validator.wrap_for_prompt(ctx.validated_query)}\n\n"
-            f"Provide a clear, accurate response."
+            f"Provide a clear, accurate response. If you need to read a file, USE THE TOOL."
         )
 
         duration_ms = int((time.monotonic() - t) * 1000)
@@ -515,18 +525,108 @@ class ExecutionKernel:
 
         results: List[Dict[str, Any]] = []
 
-        # Simple tool dispatch: detect calc requests in model response
+        # ------------------------------------------------------------------
+        # Tool Dispatch: Regex based (Robust)
+        # ------------------------------------------------------------------
+        import re
         response_text = ctx.model_response.content if ctx.model_response else ""
         available = self._tools.list_tools()
+        
+        # Regex patterns
+        # Matches: FILE_READ: <path>  (case insensitive prefix, capture path)
+        file_pat = re.compile(r"FILE_READ:\s*(.+)", re.IGNORECASE)
+        # Matches: WEB_FETCH: <url>
+        web_pat = re.compile(r"WEB_FETCH:\s*(.+)", re.IGNORECASE)
+        # Matches: CALC: <expr>
+        calc_pat = re.compile(r"CALC:\s*(.+)", re.IGNORECASE)
 
-        if "calc" in available and any(
-            kw in ctx.validated_query.lower() for kw in ["calculate", "compute", "=", "+", "-", "*", "/"]
-        ):
-            # Extract expression from query
-            import re
-            expr_match = re.search(r"[\d\s\+\-\*\/\(\)\.]+", ctx.validated_query)
-            if expr_match:
-                expr = expr_match.group(0).strip()
+        lines = response_text.splitlines()
+        for line in lines:
+            line = line.strip()
+            
+            # FILE_READ
+            if "file_read" in available:
+                m = file_pat.search(line)
+                if m:
+                    path = m.group(1).strip()
+                    try:
+                        tool_result = await self._tools.execute(
+                            "file_read",
+                            {"path": path},
+                            session_id=ctx.session_id,
+                            execution_id=ctx.execution_id,
+                            trace_id=ctx.trace_id,
+                        )
+                        results.append(tool_result.model_dump())
+                        self._memory.record_tool_call(
+                            session_id=ctx.session_id,
+                            tool_name="file_read",
+                            input_data={"path": path},
+                            output_data={"size": tool_result.output.get("size_bytes", 0)},
+                            success=True,
+                            error_message=None,
+                            duration_ms=tool_result.duration_ms,
+                        )
+                    except ASIToolError as exc:
+                        logger.warning("File tool call failed: %s", exc)
+                        self._memory.record_tool_call(
+                            session_id=ctx.session_id,
+                            tool_name="file_read",
+                            input_data={"path": path},
+                            output_data={},
+                            success=False,
+                            error_message=str(exc),
+                            duration_ms=0,
+                        )
+                    continue # One tool per line preferred
+
+            # WEB_FETCH
+            if "web_fetch" in available:
+                m = web_pat.search(line)
+                if m:
+                    url = m.group(1).strip()
+                    try:
+                        tool_result = await self._tools.execute(
+                            "web_fetch",
+                            {"url": url},
+                            session_id=ctx.session_id,
+                            execution_id=ctx.execution_id,
+                            trace_id=ctx.trace_id,
+                        )
+                        results.append(tool_result.model_dump())
+                        self._memory.record_tool_call(
+                            session_id=ctx.session_id,
+                            tool_name="web_fetch",
+                            input_data={"url": url},
+                            output_data={"status": tool_result.output.get("status", 0)},
+                            success=True,
+                            error_message=None,
+                            duration_ms=tool_result.duration_ms,
+                        )
+                    except ASIToolError as exc:
+                        logger.warning("Web tool call failed: %s", exc)
+                        self._memory.record_tool_call(
+                            session_id=ctx.session_id,
+                            tool_name="web_fetch",
+                            input_data={"url": url},
+                            output_data={},
+                            success=False,
+                            error_message=str(exc),
+                            duration_ms=0,
+                        )
+                    continue
+
+            # CALC
+            if "calc" in available:
+                m = calc_pat.search(line)
+                expr = m.group(1).strip() if m else None
+                
+                # Fallback: legacy query extraction if no explicit command
+                if not expr and any(kw in ctx.validated_query.lower() for kw in ["calculate", "compute", "+", "*"]):
+                     expr_match = re.search(r"[\d\s\+\-\*\/\(\)\.]+", ctx.validated_query)
+                     if expr_match and len(expr_match.group(0).strip()) > 3:
+                         expr = expr_match.group(0).strip()
+                
                 if expr:
                     try:
                         tool_result = await self._tools.execute(
@@ -547,16 +647,9 @@ class ExecutionKernel:
                             duration_ms=tool_result.duration_ms,
                         )
                     except ASIToolError as exc:
-                        logger.warning("Tool call failed: %s", exc)
-                        self._memory.record_tool_call(
-                            session_id=ctx.session_id,
-                            tool_name="calc",
-                            input_data={"expression": expr},
-                            output_data={},
-                            success=False,
-                            error_message=str(exc),
-                            duration_ms=0,
-                        )
+                        logger.warning("Calc tool call failed: %s", exc)
+
+
 
         ctx.tool_results = results
 
