@@ -115,3 +115,7 @@ Contact **<shivaysinghrajput@proton.me>** for pricing and licensing details.
 Copyright (c) 2026 AI Worker. All Rights Reserved.
 Unauthorized copying of this file, via any medium is strictly prohibited.
 See [LICENSE](LICENSE) for details.
+
+## Built by VisionQuantech
+
+This project was built by [VisionQuantech](https://visionquantech.com) — an AI automation studio that ships [AI agents for businesses](https://visionquantech.com/ai-agents-for-business), from [AI receptionists](https://visionquantech.com/blog/ai-receptionist-service) to custom workflow automation.
